@@ -8,7 +8,7 @@
       [`${prefixCls}-disabled`]: !!disabled,
     }'>
       <input type="hidden" :value='date' />
-      {{date ? formatFn(date,true) : placeholder}}
+      {{date ? formatFn(date) : placeholder}}
     </div>
     <div :class='{
         [`${prefixCls}-container`]: true,
@@ -43,26 +43,21 @@
 </template>
 
 <script>
-// import moment from 'moment';
-import dateFns from 'date-fns';
+import moment from 'moment';
 import { getFormatter } from './utils';
 import defaultLocale from '../locale/zh_CN';
 import zaColumnGroup from './column-group';
 import zaPopup from '../../popup';
 
-// console.log(dateFns); //eslint-disable-line
 const DATETIME = 'datetime';
 const DATE = 'date';
 const TIME = 'time';
 const MONTH = 'month';
 const YEAR = 'year';
 
-
 // 获取当月天数
-function getDaysInMonth(now) {// eslint-disable-line 
-  // console.log('getDaysInMonth',dateFns.getDaysInMonth(now));
-  // return now.clone().endOf('month').date();
-  return dateFns.getDaysInMonth(now);
+function getDaysInMonth(now) {
+  return now.clone().endOf('month').date();
 }
 
 // 补齐格式
@@ -71,9 +66,9 @@ function pad(n) {
 }
 
 // 转成moment格式
-// function getGregorianCalendar(arg) {
-//   return moment(arg);
-// }
+function getGregorianCalendar(arg) {
+  return moment(arg);
+}
 
 export default {
   name: 'zaDatePicker',
@@ -167,36 +162,20 @@ export default {
       return this.isExtendMoment(date);
     },
     isExtendMoment(date) {
-      const { format, mode } = this;
-      const type = typeof format;
+      const { mode } = this;
+      if (date instanceof moment) {
+        return date;
+      }
 
       if (!date) {
         return '';
       }
 
-      if (dateFns.isDate(date)) {
-        return date;
-      }
-      // console.log('date', dateFns.isDate(date), format) // eslint-disable-line
-      if (type === 'string') {
-        return dateFns.parse(date);
-      }
-
-      if (type === 'function') {
-        return format(date);
-      }
-
-      if (mode === YEAR) {
-        const today = dateFns.format(new Date(), 'YYYY-MM-DD');
-        return dateFns.setYear(today, date);
-      }
-
       if (mode === TIME) {
         // 如果传递参数不合法，默认转换为时：分
-        const today = dateFns.format(new Date(), 'YYYY-MM-DD');
-        return dateFns.parse(`${today} ${date}`, 'HH:mm');
+        return moment(date).isValid() ? moment(date, 'YYYY-MM-DD HH:mm') : moment(date, 'HH:mm');
       }
-      return dateFns.parse(date, getFormatter(this.mode));
+      return moment(date, 'YYYY-MM-DD HH:mm');
     },
     handleClick(event) {
       if (this.disabled) return;
@@ -210,23 +189,19 @@ export default {
       this.currentVisible = !this.currentVisible;
       this.$emit('update:visible', this.currentVisible);
     },
-    formatFn(date, isDisplay) {
-      const { format, mode } = this;
+    formatFn(date) {
+      const { format } = this;
       const type = typeof format;
 
-      if (!dateFns.isDate(date)) return '';
-
       if (type === 'string') {
-        return isDisplay ? dateFns.format(date, format) : dateFns.format(date, getFormatter(mode));
+        return date.format(format);
       }
 
       if (type === 'function') {
-        return isDisplay ? format(date) : dateFns.format(date, getFormatter(mode));
+        return format(date);
       }
-      if (mode === YEAR) {
-        return isDisplay ? dateFns.format(date, getFormatter(this.mode)) : dateFns.format(date, 'YYYY');
-      }
-      return dateFns.format(date, getFormatter(this.mode));
+
+      return date.format(getFormatter(this.mode));
     },
     onPopupClose(reason) {
       if (reason === 'clickaway') {
@@ -248,48 +223,47 @@ export default {
       this.$emit('input', this.formatFn(this.date));
     },
     getDate() {
-      // return this.date || this.display || this.getMinDate() || moment(new Date());
-      return this.date || this.display || this.getMinDate() || new Date();
+      return this.date || this.display || this.getMinDate() || moment(new Date());
     },
 
     getMinYear() {
-      return dateFns.getYear(this.getMinDate());
+      return this.getMinDate().year();
     },
 
     getMaxYear() {
-      return dateFns.getYear(this.getMaxDate());
+      return this.getMaxDate().year();
     },
 
     getMinMonth() {
-      return dateFns.getMonth(this.getMinDate());
+      return this.getMinDate().month();
     },
 
     getMaxMonth() {
-      return dateFns.getMonth(this.getMaxDate());
+      return this.getMaxDate().month();
     },
 
     getMinDay() {
-      return dateFns.getDate(this.getMinDate());
+      return this.getMinDate().date();
     },
 
     getMaxDay() {
-      return dateFns.getDate(this.getMaxDate());
+      return this.getMaxDate().date();
     },
 
     getMinHour() {
-      return dateFns.getHours(this.getMinDate());
+      return this.getMinDate().hour();
     },
 
     getMaxHour() {
-      return dateFns.getHours(this.getMaxDate());
+      return this.getMaxDate().hour();
     },
 
     getMinMinute() {
-      return dateFns.getMinutes(this.getMinDate());
+      return this.getMinDate().minute();
     },
 
     getMaxMinute() {
-      return dateFns.getMinutes(this.getMaxDate());
+      return this.getMaxDate().minute();
     },
 
     getMinDate() {
@@ -304,14 +278,14 @@ export default {
 
     getDefaultMinDate() {
       if (!this.defaultMinDate) {
-        this.defaultMinDate = new Date(2000, 0, 1, 0, 0, 0);
+        this.defaultMinDate = getGregorianCalendar([2000, 0, 1, 0, 0, 0]);
       }
       return this.defaultMinDate;
     },
 
     getDefaultMaxDate() {
       if (!this.defaultMaxDate) {
-        this.defaultMaxDate = new Date(2030, 1, 1, 23, 59, 59);
+        this.defaultMaxDate = getGregorianCalendar([2030, 1, 1, 23, 59, 59]);
       }
       return this.defaultMaxDate;
     },
@@ -319,25 +293,24 @@ export default {
       const value = parseInt(date[index], 10);
 
       const { mode } = this;
-      let newValue = new Date(this.getDate());
+      let newValue = this.getDate().clone();
 
       if (mode === DATETIME || mode === DATE || mode === YEAR || mode === MONTH) {
-        console.log('setYear', dateFns.setYear(newValue, value)) // eslint-disable-line
         switch (index) {
           case 0:
-            newValue = dateFns.setYear(newValue, value);
+            newValue.year(value);
             break;
           case 1:
-            newValue = dateFns.setMonth(newValue, value);
+            newValue.month(value);
             break;
           case 2:
-            newValue = dateFns.setDate(newValue, value);
+            newValue.date(value);
             break;
           case 3:
-            newValue = dateFns.setHours(newValue, value);
+            newValue.hour(value);
             break;
           case 4:
-            newValue = dateFns.setMinutes(newValue, value);
+            newValue.minute(value);
             break;
           default:
             break;
@@ -345,10 +318,10 @@ export default {
       } else {
         switch (index) {
           case 0:
-            newValue = dateFns.setHours(newValue, value);
+            newValue.hour(value);
             break;
           case 1:
-            newValue = dateFns.setMinutes(newValue, value);
+            newValue.minute(value);
             break;
           default:
             break;
@@ -367,31 +340,31 @@ export default {
       const maxDate = this.getMaxDate();
 
       if (mode === DATETIME) {
-        if (dateFns.isBefore(date, minDate)) {
-          return new Date(minDate);
+        if (date.isBefore(minDate)) {
+          return minDate.clone();
         }
-        if (dateFns.isAfter(date, maxDate)) {
-          return new Date(maxDate);
+        if (date.isAfter(maxDate)) {
+          return maxDate.clone();
         }
       } else if (mode === DATE) {
-        if (dateFns.isBefore(date, minDate)) {
-          return new Date(minDate);
+        if (date.isBefore(minDate, 'day')) {
+          return minDate.clone();
         }
-        if (dateFns.isAfter(date, maxDate)) {
-          return new Date(maxDate);
+        if (date.isAfter(maxDate, 'day')) {
+          return maxDate.clone();
         }
       } else {
-        const maxHour = dateFns.getHours(maxDate);
-        const maxMinutes = dateFns.getMinutes(maxDate);
-        const minHour = dateFns.getHours(minDate);
-        const minMinutes = dateFns.getMinutes(minDate);
-        const hour = dateFns.getHours(date);
-        const minutes = dateFns.getMinutes(date);
+        const maxHour = maxDate.hour();
+        const maxMinutes = maxDate.minute();
+        const minHour = minDate.hour();
+        const minMinutes = minDate.minute();
+        const hour = date.hour();
+        const minutes = date.minute();
         if (hour < minHour || (hour === minHour && minutes < minMinutes)) {
-          return new Date(minDate);
+          return minDate.clone();
         }
         if (hour > maxHour || (hour === maxHour && minutes > maxMinutes)) {
-          return new Date(maxDate);
+          return maxDate.clone();
         }
       }
       return date;
@@ -403,34 +376,29 @@ export default {
 
       let cols = [];
       let value = [];
-      const _year = dateFns.getYear(date);
-      const _month = dateFns.getMonth(date);
-      const _date = dateFns.getDate(date);
-      const _hour = dateFns.getHours(date);
-      const _minute = dateFns.getMinutes(date);
 
       if (mode === YEAR) {
         return {
           cols: this.getDateData(),
-          value: [`${_year}`],
+          value: [`${date.year()}`],
         };
       }
 
       if (mode === MONTH) {
         return {
           cols: this.getDateData(),
-          value: [`${_year}`, `${_month}`],
+          value: [`${date.year()}`, `${date.month()}`],
         };
       }
 
       if (mode === DATETIME || mode === DATE) {
         cols = this.getDateData();
-        value = [`${_year}`, `${_month}`, `${_date}`];
+        value = [`${date.year()}`, `${date.month()}`, `${date.date()}`];
       }
 
       if (mode === DATETIME || mode === TIME) {
         cols = cols.concat(this.getTimeData());
-        value = value.concat([`${_hour}`, `${_minute}`]);
+        value = value.concat([`${date.hour()}`, `${date.minute()}`]);
       }
       return {
         value,
@@ -442,8 +410,8 @@ export default {
       const { locale, formatMonth, formatDay, mode } = this;
       const date = this.getDate();
 
-      const selYear = dateFns.getYear(date);
-      const selMonth = dateFns.getMonth(date);
+      const selYear = date.year();
+      const selMonth = date.month();
       const minDateYear = this.getMinYear();
       const maxDateYear = this.getMaxYear();
       const minDateMonth = this.getMinMonth();
@@ -488,7 +456,6 @@ export default {
       const days = [];
       let minDay = 1;
       let maxDay = getDaysInMonth(date);
-      // console.log('maxDay',maxDay);// eslint-disable-line
 
       if (minDateYear === selYear && minDateMonth === selMonth) {
         minDay = minDateDay;
@@ -523,12 +490,12 @@ export default {
       const maxDateMinute = this.getMaxMinute();
       const minDateHour = this.getMinHour();
       const maxDateHour = this.getMaxHour();
-      const hour = dateFns.getHours(date);
+      const hour = date.hour();
 
       if (mode === DATETIME) {
-        const year = dateFns.getYear(date);
-        const month = dateFns.getMonth(date);
-        const day = dateFns.getDate(date);
+        const year = date.year();
+        const month = date.month();
+        const day = date.date();
 
         const minDateYear = this.getMinYear();
         const maxDateYear = this.getMaxYear();

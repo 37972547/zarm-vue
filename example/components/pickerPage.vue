@@ -107,6 +107,8 @@
                 title="选择年份"
                 v-model='v4'
                 placeholder="请选择年份"
+                max='2017'
+                min='1917'
                 mode='year'
                 @ok='handleOk'
                 @change='handleChange'
@@ -132,6 +134,8 @@
                 title="选择月份"
                 placeholder="请选择月份"
                 mode='month'
+                max='2017-10'
+                min='1917-11'
                 v-model='v6'
                 @ok='handleOk'
                 @change='handleChange'
@@ -143,8 +147,10 @@
                 title="选择时间"
                 placeholder="请选择时间"
                 mode='time'
+                max='22:25'
+                min='13:40'
                 v-model='v7'
-                :minuteStep='15'
+                :minuteStep='5'
                 @ok='handleOk'
                 @change='handleChange'
                 @cancel='handleCancel'/>
@@ -155,6 +161,8 @@
                 title="选择"
                 placeholder="请选择时间和日期"
                 mode='datetime'
+                max='2017-10-25 01:20'
+                min='1917-10-25 20:30'
                 v-model='v8'
                 @ok='handleOk'
                 @change='handleChange'
@@ -165,12 +173,14 @@
               <za-date-picker
                 title="选择日期"
                 placeholder="请选择日期"
-                mode='date'
+                mode='datetime'
+                max='2017-10-25'
+                min='1917-10-25'
                 @ok='handleOk'
                 v-model='v9'
                 @change='handleChange'
                 @cancel='handleCancel'
-                format="YYYY年MM月DD日"/>
+                format="YYYY/MM/DD HH:mm"/>
             </za-cell>
 
             <za-panel>
